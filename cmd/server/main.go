@@ -24,7 +24,7 @@ func main() {
 	})
 	logger := slog.New(handler)
 
-	configPath := "../config.json"
+	configPath := "../../config.json"
 	cfg, err := config.LoadConfig(configPath)
 	if err != nil {
 		logger.Error("Ошибка загрузки конфигурации", slog.String("path", configPath), slog.Any("error", err))
@@ -38,7 +38,7 @@ func main() {
 
 	// регистрируем сервис
 	srv := grpc.NewServer()
-	proto.RegisterPubSubServer(srv, subscription_service.NewServer(bus, logger))
+	proto.RegisterPubSubServer(srv, subscription_service.NewService(bus, logger))
 	reflection.Register(srv)
 
 	lis, err := net.Listen("tcp", addr)
@@ -46,7 +46,6 @@ func main() {
 		logger.Error("Не удалось слушать порт", slog.String("address", addr), slog.Any("error", err))
 		os.Exit(1)
 	}
-	logger.Info("Порт успешно прослушивается", slog.String("address", addr))
 
 	// graceful shutdown
 	go func() {
@@ -68,7 +67,7 @@ func main() {
 		}
 	}()
 
-	logger.Info("Запуск gRPC сервера", slog.String("address", addr))
+	logger.Info("gRPC сервера запущен на порту", slog.String("address", addr))
 	if err := srv.Serve(lis); err != nil {
 		logger.Info("gRPC сервер остановлен")
 		os.Exit(1)
