@@ -27,7 +27,7 @@ func main() {
 	configPath := "../config.json"
 	cfg, err := config.LoadConfig(configPath)
 	if err != nil {
-		logger.Error("error loading config: %v", err)
+		logger.Error("Ошибка загрузки конфигурации", slog.String("path", configPath), slog.Any("error", err))
 		os.Exit(1)
 	}
 
@@ -40,32 +40,39 @@ func main() {
 	srv := grpc.NewServer()
 	proto.RegisterPubSubServer(srv, subscription_service.NewServer(bus, logger))
 	reflection.Register(srv)
-	
+
 	lis, err := net.Listen("tcp", addr)
 	if err != nil {
-		logger.Error("не удалось слушать порт")
+		logger.Error("Не удалось слушать порт", slog.String("address", addr), slog.Any("error", err))
 		os.Exit(1)
 	}
+	logger.Info("Порт успешно прослушивается", slog.String("address", addr))
 
 	// graceful shutdown
 	go func() {
 		c := make(chan os.Signal, 1)
 		signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
-		<-c
-		logger.Info("Получен сигнал завершения, останавливаем сервер")
+		sig := <-c
+		logger.Info("Получен сигнал завершения", slog.String("signal", sig.String()))
+
 		srv.GracefulStop()
+		logger.Info("gRPC сервер остановлен")
 
 		// ждём максимум 5 секунд, пока все подписчики отпишутся
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 		if err := bus.Close(ctx); err != nil {
-			logger.Error("ошибка закрытия шины")
+			logger.Error("Ошибка при закрытии шины событий", slog.Any("error", err))
+		} else {
+			logger.Info("Шина событий успешно закрыта")
 		}
 	}()
 
-	logger.Info("gRPC сервер запущен на порту " + addr)
+	logger.Info("Запуск gRPC сервера", slog.String("address", addr))
 	if err := srv.Serve(lis); err != nil {
-		logger.Error("ошибка при Serve()")
+		logger.Info("gRPC сервер остановлен")
 		os.Exit(1)
 	}
+
+	logger.Info("gRPC сервер завершил работу")
 }
