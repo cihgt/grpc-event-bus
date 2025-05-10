@@ -72,6 +72,5 @@ func main() {
 		logger.Info("gRPC сервер остановлен")
 		os.Exit(1)
 	}
-
 	logger.Info("gRPC сервер завершил работу")
 }
