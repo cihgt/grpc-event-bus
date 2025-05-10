@@ -12,18 +12,18 @@ import (
 	"vk-subpub/internal/subpub"
 )
 
-type server struct {
+type service struct {
 	proto.UnimplementedPubSubServer
 	bus    *subpub.Bus
 	logger *slog.Logger
 }
 
-func NewServer(b *subpub.Bus, l *slog.Logger) server {
-	return server{bus: b, logger: l}
+func NewService(b *subpub.Bus, l *slog.Logger) service {
+	return service{bus: b, logger: l}
 }
 
 // Subscribe подписывает на событие
-func (s server) Subscribe(req *proto.SubscribeRequest, stream proto.PubSub_SubscribeServer) error {
+func (s service) Subscribe(req *proto.SubscribeRequest, stream proto.PubSub_SubscribeServer) error {
 	s.logger.Info("Получена новая подписка", slog.String("key", req.Key))
 
 	// канал пришедших событий
@@ -65,7 +65,7 @@ func (s server) Subscribe(req *proto.SubscribeRequest, stream proto.PubSub_Subsc
 }
 
 // Publish принимает одно сообщение и раздаёт его всем подписчикам key
-func (s server) Publish(ctx context.Context, req *proto.PublishRequest) (*emptypb.Empty, error) {
+func (s service) Publish(ctx context.Context, req *proto.PublishRequest) (*emptypb.Empty, error) {
 	if err := s.bus.Publish(req.Key, req.Data); err != nil {
 		if errors.Is(err, subpub.ErrBusClosed) {
 			s.logger.Error("Попытка записи в закрытую шину",
