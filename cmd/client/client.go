@@ -25,7 +25,7 @@ const (
 func publishMessages(client proto.PubSubClient, topic string, msgCount int, wg *sync.WaitGroup) {
 	defer wg.Done()
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	for i := 0; i < msgCount; i++ {
